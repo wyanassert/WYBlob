@@ -450,7 +450,83 @@ dispatch_sync(_ioQueue, ^{
 
 ## SDWebImage下载的执行者 -- `SDWebImageDownloaderOperation `
 ---
-**Todo**
+### 1. 接口定义
+#### a. 初始化
+```
+- (nonnull instancetype)initWithRequest:(nullable NSURLRequest *)request
+                              inSession:(nullable NSURLSession *)session
+                                options:(SDWebImageDownloaderOptions)options;
+```
+
+#### b. 存储回调Block
+```
+- (nullable id)addHandlersForProgress:(nullable SDWebImageDownloaderProgressBlock)progressBlock
+                            completed:(nullable SDWebImageDownloaderCompletedBlock)completedBlock;
+```
+
+#### c. 开始(继承父类)
+```
+- (void)start;
+```
+
+#### d. 取消(继承父类)
+```
+- (void)cancel;
+```
+
+#### e. 是否在执行(继承父类)
+```
+- (void)setFinished:(BOOL)finished;
+```
+
+#### f. 是否已结束(继承父类)
+```
+- (void)setExecuting:(BOOL)executing;
+```
+
+#### g. 取消单个操作
+```
+- (BOOL)cancel:(nullable id)token;
+```
+### 2. 分析
+#### a. 初始化
+* 首先将参数中的`request`复制了一份, 注意, `NSURLRequest`实现了`NSCopying`协议.
+* 初始化了存储block回调的数组`_callbackBlocks`.
+* 将参数`session`复制给了`_unownedSession`属性, 注意这儿是弱引用, 避免不必要的引用.
+* 生成了一个并发队列`_barrierQueue`,用于`_callbackBlocks`的增删操作,保证线程安全.
+
+#### b. 存储回调Block
+* 在这儿将`progressBlock`和`completedBlock`两个block都复制了一份,再存储到`_callbackBlocks`中.
+* 在这儿也使用了`dispatch_barrier_async`方法, 这是个异步操作
+
+#### c. 开始(继承父类)
+* 注意, 这儿虽然覆盖了父类的`start`方法, 但是不能调用[super start];
+* 在`SDWebImage`中, Operation被加到`SDWebImageDownloader`的`downloadQueue`中后会被自动执行, (自动调用`operation`的`start`方法)
+* 首先判断自己是否被取消了
+* 再判断`self.unownedSession`是否还在, 一般情况下是还在的, 因为默认的`SDWebImageDownloader`是个单例不会被释放, 但如果开发者自己初始化一个`SDWebImageDownloader`就会存在`self.unownedSession`不再引用一个session的情况.
+* 根据`session`和`request`生成一个`dataTask`, 并将自己标记为正在执行.
+* 开始下载, 并触发第一次'progressBlock'.
+
+#### d. 取消(继承父类)
+* 若已经完成, 直接返回.
+* 调用[super cancel], 会将`isFinished`标记为YES.
+* 取消下载操作.
+
+#### e. 是否在执行(继承父类)
+* 用KVO通知值改变.
+
+#### f. 是否已结束(继承父类)
+* 同上.
+
+#### g. 取消单个操作
+* 根据token将对应的回调从``删除, 在这儿使用了`[NSArray removeObjectIdenticalTo:]`方法, 利用"本体性"而不是"相等性"去移除对应的回调, 个人猜测是为了提高查找的速度. 具体可以参考[Equality](http://nshipster.cn/equality/)这篇文章.
+* 在这儿使用了`dispatch_barrier_sync`, 注意这儿是一个同步方法, 后面根据移除后`_callbackBlocks`是否为空判断是否要停止当前的下载.
+
+*Tips*: `start`与`cancel`用`@synchronized`保证的线程安全, 对`_callbackBlocks`的操作使用一个队列保障线程安全. 此外, operation持有两个`session`, 一个是`unownedSession`, 这个由`SDWebImageDownloader`持有, operation对它保持弱引用, 还有一个是`ownedSession`, 当初始化的`session`被释放时候, 使用自己生成的session, 并用`ownedSession`保持引用, 并在`[self reset]`中释放这个`session`.
+
+### 3. 小结
+这个Operation完成了SDWebImage最重要的下载功能. 将一个URL的下载下载封装成一个`NSOperation`, 特别是在线程安全上做了一些优化, 和使用异步或是同步, 哪些操作需要保证线程安全, 哪些元素需要复制, 值得思考. 在`SDWebImage`的issue中有很多于此模块有关的, 值得细看.
+
 
 ## SDWebImage 预加载 -- `SDWebImagePrefetcher`
 ---
