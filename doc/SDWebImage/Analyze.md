@@ -141,7 +141,7 @@ if (operations) {
 ```
 - (nullable id <SDWebImageOperation>)loadImageWithURL:(nullable NSURL *)url
                                               options:(SDWebImageOptions)options
-                                             progress:(nullable ÂSDWebImageDownloaderProgressBlock)progressBlock
+                                             progress:(nullable SDWebImageDownloaderProgressBlock)progressBlock
                                             completed:(nullable SDInternalCompletionBlock)completedBlock;
 ```
 
@@ -616,7 +616,7 @@ SDWebImage 支持动态图的, 建立在Flipboard的开源项目[FLAnimatedImage
 
 ### 2. 分析
 #### 1. 加载Gif
-* 直接调用`[UIView sd_setImageWithURL:placeholderImage:options:progress:completed:]`方法,这个方法在最开始对`UIView+WebCache`模块有介绍.
+* 直接调用`[UIView sd_setImageWithURL:placeholderImage:options:progress:completed:]`方法,这个方法在最开始对[UIView+WebCache](#a-下载图片)模块有介绍.
 * 回调结果中有`UIImage *image, NSData *imageData`, 如果`imageData`是Gif, 使用`[FLAnimatedImage animatedImageWithGIFData:imageData]`方法初始化gif并使用.
 * **注意**:[FLAnimatedImage animatedImageWithGIFData:imageData]方法耗时比较长, 本模块又是在主线程做这个操作, 假如下载Gif的同时, 用户在进行UI操作, 比如滑动页面等会造成掉帧, 可以将这一步丢到后台线程完成, 完成后在主线程进行展示. 这样做的下一个问题是, 下载GIF是在后台, SD下载完成回调丢回主线程, 在主线程丢到后台去生成一个`FLAnimatedImage`实例, 再回到主线程进行展示, 中间本不该回到主线程造成资源浪费. 前面说了, 这个模块式通过调用`[UIView sd_setImageWithURL:placeholderImage:options:progress:completed:]`来完成下载操作, 我们可以自己调用该方法(不需要引入`SDWebImage/GIF`子模块). 例子如下(`self.gifImageView` 是一个`FLAnimatedImageView`实例):
 
