@@ -530,4 +530,73 @@ dispatch_sync(_ioQueue, ^{
 
 ## SDWebImage 预加载 -- `SDWebImagePrefetcher`
 ---
-**Todo**
+### 1. 接口定义
+#### 1. 初始化
+```
+- (nonnull instancetype)initWithImageManager:(nonnull SDWebImageManager *)manager;
+```
+
+#### 2. 执行预加载
+```
+- (void)prefetchURLs:(nullable NSArray<NSURL *> *)urls
+            progress:(nullable SDWebImagePrefetcherProgressBlock)progressBlock
+           completed:(nullable SDWebImagePrefetcherCompletionBlock)completionBlock;
+```
+
+#### 3. 取消
+```
+- (void)cancelPrefetching;
+```
+
+### 2. 分析
+#### 1. 初始化
+* 默认的init方法生成了一个新的`SDWebImageManager`实例, 在这儿使用了`[SDWebImageManager new]`, 调用的是`SDWebImageManager`的方法默认初始化方法. 因此, 这儿的manager和`[SDWebImageManager sharedManager]`不是一个实例, 但是由于`SDWebImageManager`的默认初始化方法中使用的`[SDImageCache sharedImageCache]`和`[SDWebImageDownloader sharedDownloader]`单例, 所以在这儿初始化的manager和`[SDWebImageManager sharedManager]`共享的同一个`_imageCache`和`_imageDownloader`实例.
+* 举个例子, 在我写的一个测试程序中, `[SDWebImageManager sharedManager]`的内存地址是`0x61000107f280`, 而`SDWebImagePrefetcher`所持有的manager地址是`0x000060000106ef00`, 他们不是同一个manager, 当我打印`[SDWebImageManager sharedManager]`的各个属性时候, 如下方结果, `_imageCache`和`_imageDownloader`的地址是一致的.
+
+```
+(lldb) pinternals 0x61000107f280
+(SDWebImageManager) $12 = {
+  NSObject = {
+    isa = SDWebImageManager
+  }
+  _delegate = nil
+  _imageCache = 0x00006080010661c0
+  _imageDownloader = 0x00006080000ff800
+  _cacheKeyFilter = (null)
+  _failedURLs = 0x00006080006406f0 0 elements
+  _runningOperations = 0x00006080010671c0 @"1 element"
+}
+
+(lldb) pinternals 0x000060000106ef00
+(SDWebImageManager) $8 = {
+  NSObject = {
+    isa = SDWebImageManager
+  }
+  _delegate = nil
+  _imageCache = 0x00006080010661c0
+  _imageDownloader = 0x00006080000ff800
+  _cacheKeyFilter = (null)
+  _failedURLs = 0x00006000006524b0 0 elements
+  _runningOperations = 0x0000600001277f80 @"1 element"
+}
+```
+
+#### 2. 执行预加载
+* 首先会取消掉所有的预加载, 所以确保这个方法不要被频繁调用.
+* 记录当前的时间, *Tips:使用的是`CFAbsoluteTimeGetCurrent()`比较高效的获取时间的方法*, ~虽然后面好像没用到这个属性~.
+* 对每个url调用一次使用`startPrefetchingAtIndex`方法, 在该方法中使用`SDWebImageManager`执行下载URL, 缓存也是在`SDWebImageManager`中做的, 详细可以参考`SDWebImageManager`内容.
+* 需要注意的是, 为了避免队列中由于某些未知原因导致某个请求未被调用, 最终导致无法完全结束, 在`startPrefetchingAtIndex`中一个URL缓存完成之后,方法中有如下一段代码, 目的是通过强制执行下一个请求缓存的目的来增加`self.requestedCount`的值, 已达到处理这种弄异常的目的, 但是一般情况下不会只想到这里面来.
+
+```
+if (self.prefetchURLs.count > self.requestedCount) {
+	dispatch_async(self.prefetcherQueue, ^{
+        [self startPrefetchingAtIndex:self.requestedCount];
+    });
+}
+```
+
+#### 3. 取消
+* 情况当前所有的记录, 并使用持有的`SDWebImageManager`结束正在下载的任务.
+
+### 3. 小结
+这一个模块大部分是依靠`SDWebImageManager`来完成主体功能, 我曾经在某篇博客上看到有人说`SDWebImagePrefetcher`是不支持并发的, 至少在目前这个版本看来, 是完全支持一组URL并发的, 但是不支持同时预加载多组URL.
