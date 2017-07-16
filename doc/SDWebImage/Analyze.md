@@ -43,7 +43,7 @@
 ### 2. 分析
 
 #### a. 下载图片
-*下载图片有数个方法定义, 见`UIView+WebCache.h`, 最终都调用了`UIView+WebCache`中的 `sd_internalSetImageWithURL` 这个方法.*
+*下载图片有数个方法定义, 见[UIView+WebCache.h](https://github.com/rs/SDWebImage/blob/master/SDWebImage/UIView%2BWebCache.h), 最终都调用了`UIView+WebCache`中的 `sd_internalSetImageWithURL` 这个方法.*
 
 sd_internalSetImageWithURL 方法做的事情：
 
@@ -180,10 +180,10 @@ if (operations) {
 
 ### 2. 分析
 #### a. 缓存模块
-* 通过 `[SDImageCache sharedImageCache]` 引用到了 SDImageCache 的单例.
+* 通过 `[SDImageCache sharedImageCache]` 引用到了 [SDImageCache](#sdwebimage缓存模块----sdimagecache) 的单例.
 
 #### b. 下载模块
-* 通过 `[SDWebImageDownloader sharedImageCache]` 引用到了 SDWebImageDownloader 的单例.
+* 通过 `[SDWebImageDownloader sharedImageCache]` 引用到了 [SDWebImageDownloader](#sdwebimage下载模块----sdwebimagedownloader) 的单例.
 
 #### c. 下载图片
 * 判断输入错误处理等, 并生成一个 `SDWebImageCombinedOperation` 实例, 也就是上文提到过的一个operation, 然后将改operation加入`self.runningOperations`方便管理;
@@ -216,7 +216,7 @@ if (operations) {
 * 如果定义了`self.cacheKeyFilter`自定义存储Key,则使用该回调获取用于缓存索引的Key
 
 ### 3. 小结
-从`SDWebImage `可以看出作者考虑到了很多一般开发者不会去考虑的事情, 简单的如线程安全, 更细致的如`imageManager:transformDownloadedImage:withURL:`方法, 方便使用SDWebImage的人在使用之前先处理, 再缓存, 一个个简单的应用场景是用户想对一张网络图片进行模糊处理, 一般的步骤是先用SDWebImage下载,然后自行模糊处理,再展示. 但如果有大量图片要处理, 又涉及到tableView的复用问题, 为了提高性能, 使用者要自己对模糊之后的图片做缓存, 优化缓存策略和IO潜在地问题等等. 实际上SDWebImage 已经可以处理这个问题而不需要使用者再去考虑.
+从`SDWebImage`可以看出作者考虑到了很多一般开发者不会去考虑的事情, 简单的如线程安全, 更细致的如`imageManager:transformDownloadedImage:withURL:`方法, 方便使用SDWebImage的人在使用之前先处理, 再缓存, 一个个简单的应用场景是用户想对一张网络图片进行模糊处理, 一般的步骤是先用SDWebImage下载,然后自行模糊处理,再展示. 但如果有大量图片要处理, 又涉及到tableView的复用问题, 为了提高性能, 使用者要自己对模糊之后的图片做缓存, 优化缓存策略和IO潜在地问题等等. 实际上SDWebImage 已经可以处理这个问题而不需要使用者再去考虑.
 
 ---
 ## SDWebImage缓存模块 -- `SDImageCache`
@@ -316,9 +316,9 @@ dispatch_sync(_ioQueue, ^{
 
 
 #### a. 缓存图片
-* 首先根据`SDImageCacheConfig`判断是否在在内存中缓存,使用 [NSCache setObject:forKey:cost:]方法缓存
+* 首先根据`SDImageCacheConfig`判断是否在在内存中缓存,使用`[NSCache setObject:forKey:cost:]`方法缓存.
 * 根据`toDisk`参数判断是否在磁盘中缓存,在ioQueue中调用`[self storeImageDataToDisk:data forKey:key];`缓存到硬盘,使用`@autoreleasepool`释放临时变量.
-* 最后在组线程执行回调.
+* 最后在主线程执行回调.
 
 *Tips*
 *NSCache 有最大缓存容积的设置`totalCostLimit`, 但是这个设置只有在设置缓存的时候指定要缓存对象占用的字节数(cost)才能生效. 但是对象的内存占用计算十分复杂, SDWebImage只是给出了一个大致值`image.size.height * image.size.width * image.scale * image.scale;`.*
@@ -446,7 +446,7 @@ dispatch_sync(_ioQueue, ^{
 * 自动调用`SDWebImageDownloaderOperation`的`cancel`方法.
 
 ### 3. 小结
-这一个模块开始进行图片下载相关代码的执行, 然而真正的下载代码还是被放在了`SDWebImageDownloaderOperation`中, 'SDWebImageDownloader'模块的分析只是对`SDWebImageDownloaderOperation`做了简单的描述, 主要还是重点分析本模块所做的事情--管理所有的下载行为. 此外, `self.downloadQueue`保证了对`self.URLOperations`操作能并发, 但又不相互干扰(同时保证异步和并发, 但实际上并没有并发).
+这一个模块开始进行图片下载相关代码的执行, 然而真正的下载代码还是被放在了[SDWebImageDownloaderOperation](#sdwebimage下载的执行者----sdwebimagedownloaderoperation)中, 'SDWebImageDownloader'模块的分析只是对`SDWebImageDownloaderOperation`做了简单的描述, 主要还是重点分析本模块所做的事情--管理所有的下载行为. 此外, `self.downloadQueue`保证了对`self.URLOperations`操作能并发, 但又不相互干扰(同时保证异步和并发, 但实际上并没有并发).
 
 ## SDWebImage下载的执行者 -- `SDWebImageDownloaderOperation `
 ---
@@ -599,7 +599,7 @@ if (self.prefetchURLs.count > self.requestedCount) {
 * 情况当前所有的记录, 并使用持有的`SDWebImageManager`结束正在下载的任务.
 
 ### 3. 小结
-这一个模块大部分是依靠`SDWebImageManager`来完成主体功能, 我曾经在某篇博客上看到有人说`SDWebImagePrefetcher`是不支持并发的, 至少在目前这个版本看来, 是完全支持一组URL并发的, 但是不支持同时预加载多组URL.
+这一个模块大部分是依靠[SDWebImageManager](#sdwebimage幕后管理者----sdwebimagemanager)来完成主体功能, 我曾经在某篇博客上看到有人说`SDWebImagePrefetcher`是不支持并发的, 至少在目前这个版本看来, 是完全支持一组URL并发的, 但是不支持同时预加载多组URL.
 
 
 ## SDWebImage 子模块 GIF  -- `FLAnimatedImage`
@@ -649,3 +649,13 @@ SDWebImage 支持动态图的, 建立在Flipboard的开源项目[FLAnimatedImage
 
 ### 3. 小结
 这个模块被应该做三件事情, 一件是下载, 这个在下载模块完成了; 第二个是从下载下来的二进制文件中生成一张图片, 这个在`UIImage+MultiFormat`模块中完成的, 有兴趣的同学可以看看这个文件; 第三个是展示二进制文件, 这个是`FLAnimatedImage`做的.
+
+
+___
+
+#### 写在最后
+最近想看一下一些优秀的开源库是如何编写的, `SDWebImage`是我看的第一份源码(以前草草看的不算), 受益匪浅. 这次我边看边写笔记, 最终整理这篇博客, 不仅仅是对源码的流程讲解, 有一些小的细节小技巧我也有单独标出来. 平时码代码的过程还是太随意了, 因为工程的量级决定不需要太注重一些细节, 但是对于这些细节, 能注意的还是应该注意.
+
+作者:[wyanassert](https://github.com/wyanassert)
+
+原地址:[https://github.com/wyanassert/WYBlob/blob/master/doc/SDWebImage/Analyze.md](https://github.com/wyanassert/WYBlob/blob/master/doc/SDWebImage/Analyze.md)
