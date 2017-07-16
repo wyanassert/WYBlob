@@ -3,6 +3,17 @@
 #### Version 4.0.0
 ---
 
+## 导航
+### 按照模块分析 SDWebImage
+#### 1. UI交互的基类 [UIView+WebCache](https://github.com/wyanassert/WYBlob/blob/master/doc/SDWebImage/Analyze.md#uikit-交互1----uiviewwebcache)
+#### 2. SDWebImage 的主要管理者 [SDWebImageManager](https://github.com/wyanassert/WYBlob/blob/master/doc/SDWebImage/Analyze.md#sdwebimage幕后管理者----sdwebimagemanager)
+#### 3. 缓存模块 [SDImageCache](https://github.com/wyanassert/WYBlob/blob/master/doc/SDWebImage/Analyze.md#sdwebimage缓存模块----sdimagecache)
+#### 4. 下载模块 [SDWebImageDownloader](https://github.com/wyanassert/WYBlob/blob/master/doc/SDWebImage/Analyze.md#sdwebimage下载模块----sdwebimagedownloader)
+#### 5. 下载的执行者 [SDWebImageDownloaderOperation](https://github.com/wyanassert/WYBlob/blob/master/doc/SDWebImage/Analyze.md#sdwebimage下载的执行者----sdwebimagedownloaderoperation)
+#### 6. 预加载 [SDWebImagePrefetcher](https://github.com/wyanassert/WYBlob/blob/master/doc/SDWebImage/Analyze.md#sdwebimage-预加载----sdwebimageprefetcher)
+#### 7. GIF子模块 [FLAnimatedImage](https://github.com/wyanassert/WYBlob/blob/master/doc/SDWebImage/Analyze.md#sdwebimage-子模块-gif-----flanimatedimage)
+___
+
 ## UIKit 交互1 -- `UIView+WebCache`
 ### 1. 接口定义
 
@@ -648,7 +659,7 @@ SDWebImage 支持动态图的, 建立在Flipboard的开源项目[FLAnimatedImage
 ```
 
 ### 3. 小结
-这个模块被应该做三件事情, 一件是下载, 这个在下载模块完成了; 第二个是从下载下来的二进制文件中生成一张图片, 这个在`UIImage+MultiFormat`模块中完成的, 有兴趣的同学可以看看这个文件; 第三个是展示二进制文件, 这个是`FLAnimatedImage`做的.
+这个模块被应该做三件事情, 一件是下载, 这个在下载模块完成了; 第二个是从下载下来的二进制文件中生成一张图片, 这个在[UIImage+MultiFormat](https://github.com/rs/SDWebImage/blob/master/SDWebImage/UIImage%2BMultiFormat.m)模块中完成的, 有兴趣的同学可以看看这个文件; 第三个是展示二进制文件, 这个是`FLAnimatedImage`做的.
 
 
 ___
