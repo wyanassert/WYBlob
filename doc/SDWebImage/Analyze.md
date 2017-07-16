@@ -78,7 +78,7 @@ sd_internalSetImageWithURL 方法做的事情：
 NSString *key = [[SDWebImageManager sharedManager] cacheKeyForURL:url];
 UIImage *lastPreviousCachedImage = [[SDImageCache sharedImageCache] imageFromCacheForKey:key];
 
-[self sd_setImageWithURL:url placeholderImage:lastPreviousCachedImage ?: placeholder options:options progress:progressBlock completed:completedBlock]; 
+[self sd_setImageWithURL:url placeholderImage:lastPreviousCachedImage ?: placeholder options:options progress:progressBlock completed:completedBlock];
 ```
 
 *Tips* : 在执行下载的过程中, 如果找到了缓存, 就忽略placeholder, 避免一次无效操作.
@@ -117,7 +117,7 @@ if (operations) {
 
 *Tips* : 关于`id <SDWebImageOperation> operation`解释:
 	每个 operaton 都有实现一个 `- (void)cancel;` 方法, 这个是在`SDWebImageOperation`协议中定义, 无论是什么类型实例, 只要实现了该协议, 都可以统一调用,详细解释可以搜索`iOS`+`面向接口编程`.
-	
+
 ### 3. 小结
 在 `UIView+WebCache` 模块中, 只做了一些简单的操作, 定义好了与 `UIKit` 交互接口, 下载与取消交给了 `SDWebImageManager` 处理, 缓存交给了 `SDImageCache` 处理.
 
@@ -141,7 +141,7 @@ if (operations) {
 ```
 - (nullable id <SDWebImageOperation>)loadImageWithURL:(nullable NSURL *)url
                                               options:(SDWebImageOptions)options
-                                             progress:(nullable SDWebImageDownloaderProgressBlock)progressBlock
+                                             progress:(nullable ÂSDWebImageDownloaderProgressBlock)progressBlock
                                             completed:(nullable SDInternalCompletionBlock)completedBlock;
 ```
 
@@ -302,7 +302,7 @@ _ioQueue = dispatch_queue_create("com.hackemist.SDWebImageCache", DISPATCH_QUEUE
 *生成的一个串行队列,专用于IO操作. 不再使用的时候应该使用`dispatch_release`释放队列.*
 
 
-`@property (strong, nonatomic, nonnull) NSCache *memCache;` 
+`@property (strong, nonatomic, nonnull) NSCache *memCache;`
 
 *`NSCache `是iOS系统提供的缓存类,通过键值对对需要缓存的对象作强引用来达到缓存的目的.*
 
@@ -311,7 +311,7 @@ NSFileManager *_fileManager;
 dispatch_sync(_ioQueue, ^{
             _fileManager = [NSFileManager new];
         });
-``` 
+```
 *注意,生成_fileManager在ioQueue中,并且是是一个同步操作, 之后_fileManager都要在ioQueue中进行.*
 
 
@@ -320,7 +320,7 @@ dispatch_sync(_ioQueue, ^{
 * 根据`toDisk`参数判断是否在磁盘中缓存,在ioQueue中调用`[self storeImageDataToDisk:data forKey:key];`缓存到硬盘,使用`@autoreleasepool`释放临时变量.
 * 最后在组线程执行回调.
 
-*Tips* 
+*Tips*
 *NSCache 有最大缓存容积的设置`totalCostLimit`, 但是这个设置只有在设置缓存的时候指定要缓存对象占用的字节数(cost)才能生效. 但是对象的内存占用计算十分复杂, SDWebImage只是给出了一个大致值`image.size.height * image.size.width * image.scale * image.scale;`.*
 
 #### b. 缓存图片到硬盘上(只能从IO Queue 调用)
@@ -346,7 +346,7 @@ dispatch_sync(_ioQueue, ^{
 #### f. 从硬盘取缓存的图片(同步)
 * 在硬盘上找目标二进制文件,找到后调用`UIImage *image = [UIImage sd_imageWithData:data];image = [self scaledImageForKey:key image:image];`生成目标图片,若允许,在内存中缓存该图片.
 
-*理论上来说, 这句话放在ioQueue中执行会好一些, 猜测可能是需要同步执行* 
+*理论上来说, 这句话放在ioQueue中执行会好一些, 猜测可能是需要同步执行*
 
 #### g. 从缓存中取图片(同步)
 * 直接调用上面两个方法.
@@ -600,3 +600,52 @@ if (self.prefetchURLs.count > self.requestedCount) {
 
 ### 3. 小结
 这一个模块大部分是依靠`SDWebImageManager`来完成主体功能, 我曾经在某篇博客上看到有人说`SDWebImagePrefetcher`是不支持并发的, 至少在目前这个版本看来, 是完全支持一组URL并发的, 但是不支持同时预加载多组URL.
+
+
+## SDWebImage 子模块 GIF  -- `FLAnimatedImage`
+SDWebImage 支持动态图的, 建立在Flipboard的开源项目[FLAnimatedImage](https://github.com/Flipboard/FLAnimatedImage)的基础之上, 增加的一个扩展, 使用方法是`pod 'SDWebImage/GIF'`, 或者手动把`SDWebImage`文件夹中的`FLAnimatedImage`文件夹拖入工程.
+### 1. 接口定义
+#### 1. 加载Gif
+```
+- (void)sd_setImageWithURL:(nullable NSURL *)url
+          placeholderImage:(nullable UIImage *)placeholder
+                   options:(SDWebImageOptions)options
+                  progress:(nullable SDWebImageDownloaderProgressBlock)progressBlock
+                 completed:(nullable SDExternalCompletionBlock)completedBlock;
+```
+
+### 2. 分析
+#### 1. 加载Gif
+* 直接调用`[UIView sd_setImageWithURL:placeholderImage:options:progress:completed:]`方法,这个方法在最开始对`UIView+WebCache`模块有介绍.
+* 回调结果中有`UIImage *image, NSData *imageData`, 如果`imageData`是Gif, 使用`[FLAnimatedImage animatedImageWithGIFData:imageData]`方法初始化gif并使用.
+* **注意**:[FLAnimatedImage animatedImageWithGIFData:imageData]方法耗时比较长, 本模块又是在主线程做这个操作, 假如下载Gif的同时, 用户在进行UI操作, 比如滑动页面等会造成掉帧, 可以将这一步丢到后台线程完成, 完成后在主线程进行展示. 这样做的下一个问题是, 下载GIF是在后台, SD下载完成回调丢回主线程, 在主线程丢到后台去生成一个`FLAnimatedImage`实例, 再回到主线程进行展示, 中间本不该回到主线程造成资源浪费. 前面说了, 这个模块式通过调用`[UIView sd_setImageWithURL:placeholderImage:options:progress:completed:]`来完成下载操作, 我们可以自己调用该方法(不需要引入`SDWebImage/GIF`子模块). 例子如下(`self.gifImageView` 是一个`FLAnimatedImageView`实例):
+
+```
+#import "NSData+ImageContentType.h"
+#import "UIView+WebCache.h"
+
+[self.gifImageView sd_internalSetImageWithURL:[NSURL URLWithString:self.resource.previewImageUrl]
+                             placeholderImage:nil
+                                      options:0
+                                 operationKey:nil
+                                setImageBlock:^(UIImage * _Nullable image, NSData * _Nullable imageData) {
+                                    SDImageFormat imageFormat = [NSData sd_imageFormatForImageData:imageData];
+                                    if (imageFormat == SDImageFormatGIF) {
+                                        dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_HIGH, 0), ^{
+                                            FLAnimatedImage *animatedImage = [FLAnimatedImage animatedImageWithGIFData:imageData];;
+                                            dispatch_async(dispatch_get_main_queue(), ^{
+                                                weakSelf.gifImageView.animatedImage = animatedImage;
+                                            });
+                                        });
+                                        weakSelf.gifImageView.image = nil;
+                                    } else {
+                                        weakSelf.gifImageView.image = image;
+                                        weakSelf.gifImageView.animatedImage = nil;
+                                    }
+                                }
+                                     progress:nil completed:^(UIImage * _Nullable image, NSError * _Nullable error, SDImageCacheType cacheType, NSURL * _Nullable imageURL) {
+                                     }];
+```
+
+### 3. 小结
+这个模块被应该做三件事情, 一件是下载, 这个在下载模块完成了; 第二个是从下载下来的二进制文件中生成一张图片, 这个在`UIImage+MultiFormat`模块中完成的, 有兴趣的同学可以看看这个文件; 第三个是展示二进制文件, 这个是`FLAnimatedImage`做的.
