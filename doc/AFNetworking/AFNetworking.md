@@ -1,18 +1,20 @@
 # [AFNetworking3](https://github.com/AFNetworking/AFNetworking.git) 阅读源码笔记
 
-** Version : 3.1.0**
+**Version : 3.1.0**
 
 ---
 
 
 ## 结构导航(由表及里)
-#### 直接使用的模块:[AFHTTPSessionManager]()
+#### 与外部HTTP请求交互的Manager -- [AFHTTPSessionManager]()
+#### 外部会话的核心(基类) -- [AFURLSessionManager]()
+#### 请求报文序列化 -- [AFHTTPRequestSerializer]()
 
 
 ---
 
-## 直接使用的模块--`AFHTTPSessionManager`
-阅读头文件可以知道这个模块究竟做了什么, 特别是在此作为`AFNetWorking`暴露给外面的头文件. 但是有个小坑就是`AFHTTPSessionManager`的基类也做了很多事情, 所以仅仅看`AFHTTPSessionManager `是完全不够的, 还要看`AFURLSessionManager`这个文件才能较为全面的了解`AFNetWorking`所提供的功能.
+## 与外部HTTP请求交互的Manager--`AFHTTPSessionManager`
+阅读头文件可以知道这个模块究竟做了什么, 特别是在此作为`AFNetWorking`暴露给外面的头文件. 但是有个小坑就是`AFHTTPSessionManager`的基类也做了很多事情, 所以仅仅看`AFHTTPSessionManager.h `是完全不够的, 还要看`AFURLSessionManager.h`这个文件才能较为全面的了解`AFNetWorking`所提供的功能.
 
 ### 1. 接口定义
 #### a. 继承`AFURLSessionManager`, 很多较为常用的功能实际在基类定义.
@@ -164,14 +166,121 @@ AFHTTPResponseSerializer <AFURLResponseSerialization> * responseSerializer;
 * 调用基类的`dataTaskWithRequest: uploadProgress: downloadProgress: completionHandler:`方法. 这之后实际在前面[h.  使用POST请求完成一次数据传输任务]()也有说明.
 
 ### 3. 小结
-`AFHTTPSessionManager`作为最上层的接口, 一如既往地将绝大多数事情交给了其他类来完成, 请求头的序列化交给了[AFURLSessionManager]()完成, 绑定请求的各种回调交给了基类[AFURLSessionManager]()来完成. 着这些基础之上, 顾及到了一些系统"feature"和不同iOS版本的不一致, 有一些亮点值得关注, 在`AFNetWorking`的源码以及文中有相关描述解释以及链接, 值得一看.
+`AFHTTPSessionManager`作为最上层的接口, 一如既往地将绝大多数事情交给了其他类来完成, 请求头的序列化交给了[AFHTTPRequestSerializer]()完成, 绑定请求的各种回调交给了基类[AFURLSessionManager]()来完成. 着这些基础之上, 顾及到了一些系统"feature"和不同iOS版本的不一致, 有一些亮点值得关注, 在`AFNetWorking`的源码以及文中有相关描述解释以及链接, 值得一看.
 
 ---
 
-## `AFURLSessionManager`
+## 外部会话的核心(基类) -- `AFURLSessionManager`
+`AFURLSessionManager`是`AFHTTPSessionManager`的基类, AFNetWorking中常用的下载方法`downloadTaskWithRequest: progress: destination: completionHandler:`方法实际是定义在基类里面的. 此外, 子类中的所有与Http交互的接口,最终都是调用基类中的`dataTaskWithRequest`方法实现的, 所以这个模块可以视为`AFNetWorking`隐藏在Manager下的核心模块.
 
----
+### 1. 接口定义
 
-## `AFURLSessionManagerTaskDelegate `
+### 2. 分析
+
+### 3. 小结
+
+## `AFURLSessionManagerTaskDelegate`
+`AFURLSessionManagerTaskDelegate` 是构造的的一个专门处理各种回调, 声明实现了`NSURLSessionTaskDelegate`, `NSURLSessionDataDelegate`, `NSURLSessionDownloadDelegate`三个delegate, 定义在`AFURLSessionManager.m`文件中, 即只有`AFURLSessionManager`可以使用这个delegate.
+
+### 1. 接口定义
+#### a. 指定初始化方法.
+
+```
+- (instancetype)initWithSessionConfiguration:(nullable NSURLSessionConfiguration *)configuration;
+```
+
+#### b. 废弃当前会话, 并决定是否取消挂起的请求.
+
+```
+- (void)invalidateSessionCancelingTasks:(BOOL)cancelPendingTasks;
+```
+
+#### c. 生成一个数据传输任务.
+
+```
+- (NSURLSessionDataTask *)dataTaskWithRequest:(NSURLRequest *)request
+                               uploadProgress:(nullable void (^)(NSProgress *uploadProgress))uploadProgressBlock
+                             downloadProgress:(nullable void (^)(NSProgress *downloadProgress))downloadProgressBlock
+                            completionHandler:(nullable void (^)(NSURLResponse *response, id _Nullable responseObject,  NSError * _Nullable error))completionHandler;
+```
+
+#### d. 根据特地的本地文件创建一个上传任务.
+
+```
+- (NSURLSessionUploadTask *)uploadTaskWithRequest:(NSURLRequest *)request
+                                         fromFile:(NSURL *)fileURL
+                                         progress:(nullable void (^)(NSProgress *uploadProgress))uploadProgressBlock
+                                completionHandler:(nullable void (^)(NSURLResponse *response, id _Nullable responseObject, NSError  * _Nullable error))completionHandler;
+```
+
+#### e. 创建一个上传任务.
+
+```
+- (NSURLSessionUploadTask *)uploadTaskWithRequest:(NSURLRequest *)request
+                                         fromData:(nullable NSData *)bodyData
+                                         progress:(nullable void (^)(NSProgress *uploadProgress))uploadProgressBlock
+                                completionHandler:(nullable void (^)(NSURLResponse *response, id _Nullable responseObject, NSError * _Nullable error))completionHandler;
+```
+
+#### f. 根据数据源上传(是这么翻译?)
+
+```
+- (NSURLSessionUploadTask *)uploadTaskWithStreamedRequest:(NSURLRequest *)request
+                                                 progress:(nullable void (^)(NSProgress *uploadProgress))uploadProgressBlock
+                                        completionHandler:(nullable void (^)(NSURLResponse *response, id _Nullable responseObject, NSError * _Nullable error))completionHandler;
+```
+
+#### g. 创建下载请求
+
+```
+- (NSURLSessionDownloadTask *)downloadTaskWithRequest:(NSURLRequest *)request
+                                             progress:(nullable void (^)(NSProgress *downloadProgress))downloadProgressBlock
+                                          destination:(nullable NSURL * (^)(NSURL *targetPath, NSURLResponse *response))destination
+                                    completionHandler:(nullable void (^)(NSURLResponse *response, NSURL * _Nullable filePath, NSError * _Nullable error))completionHandler;
+```
+
+#### h. 继续未完成的下载
+
+```
+- (NSURLSessionDownloadTask *)downloadTaskWithResumeData:(NSData *)resumeData
+                                                progress:(nullable void (^)(NSProgress *downloadProgress))downloadProgressBlock
+                                             destination:(nullable NSURL * (^)(NSURL *targetPath, NSURLResponse *response))destination
+                                       completionHandler:(nullable void (^)(NSURLResponse *response, NSURL * _Nullable filePath, NSError * _Nullable error))completionHandler;
+```
+
+### 2. 分析
+
+#### a. 指定初始化方法.
+#### b. 废弃当前会话, 并决定是否取消挂起的请求.
+#### c. 生成一个数据传输任务.
+#### d. 根据特地的本地文件创建一个上传任务.
+#### e. 创建一个上传任务.
+#### f. 根据数据源上传(是这么翻译?)
+#### g. 创建下载请求
+#### h. 继续未完成的下载
+
+### 3. 小结
+这个模块只是分析了一些主要的功能, 还有很多譬如获取上下传进度,要求认证,重定向之类的方法, 基本都是直接调用系统方法, 不过多说明.
 
 ___
+
+## 请求报文序列化 -- `AFHTTPRequestSerializer`
+
+### 1. 接口定义
+
+### 2. 分析
+
+### 3. 小结
+
+---
+
+
+## 网络监控模块 -- `AFNetworkReachabilityManager`
+
+### 1. 接口定义
+
+### 2. 分析
+
+### 3. 小结
+
+---
