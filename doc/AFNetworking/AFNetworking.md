@@ -175,14 +175,6 @@ AFHTTPResponseSerializer <AFURLResponseSerialization> * responseSerializer;
 
 ### 1. 接口定义
 
-### 2. 分析
-
-### 3. 小结
-
-## `AFURLSessionManagerTaskDelegate`
-`AFURLSessionManagerTaskDelegate` 是构造的的一个专门处理各种回调, 声明实现了`NSURLSessionTaskDelegate`, `NSURLSessionDataDelegate`, `NSURLSessionDownloadDelegate`三个delegate, 定义在`AFURLSessionManager.m`文件中, 即只有`AFURLSessionManager`可以使用这个delegate.
-
-### 1. 接口定义
 #### a. 指定初始化方法.
 
 ```
@@ -251,16 +243,51 @@ AFHTTPResponseSerializer <AFURLResponseSerialization> * responseSerializer;
 ### 2. 分析
 
 #### a. 指定初始化方法.
+* 设置`configuration`, 若为空, 使用`[NSURLSessionConfiguration defaultSessionConfiguration]`.
+* 初始化`self.operationQueue`并将并发数设置为1.
+* 初始化`self.session`-- 会话, `self.responseSerializer`--请求序列化, `self.securityPolicy`--安全相关设置, `self.reachabilityManager`, `self.mutableTaskDelegatesKeyedByTaskIdentifier`--存储delegate, `self.lock`--对`mutableTaskDelegatesKeyedByTaskIdentifier`进行操作时候上锁保证线程安全.
+* 使用`getTasksWithCompletionHandler`方法对`self.session`所持的task进行一次遍历, 将已经存在的task加入管理.~~但是初始化的时候这样遍历应该是没有东西的吧?~~
+
 #### b. 废弃当前会话, 并决定是否取消挂起的请求.
+* 根据参数执行`[self.session invalidateAndCancel];`或者`[self.session finishTasksAndInvalidate];`
+
 #### c. 生成一个数据传输任务.
+* 使用`url_session_manager_create_task_safely`安全方法与`[self.session dataTaskWithRequest:request];`产生一个dataTask. 参数`fileURL`作为产生dataTask的参数使用, 实际是iOS8及以上什么都不做, iOS8以下专门创建一个串行队列用于产生dataTask.
+* 调用`[self addDelegateForDataTask: uploadProgress: downloadProgress: completionHandler:];`方法将各个回调block加入管理, 在这儿使用了NSLock锁.
+* 返回产生的dataTask, 注意, 可能为nil.
+
 #### d. 根据特地的本地文件创建一个上传任务.
+* 使用`url_session_manager_create_task_safely`安全方法产生一个uploadTask.
+* 由于iOS7上`[self.session uploadTaskWithRequest:request fromFile:fileURL]`可能返回nil, 因此失败时候会重试三次.
+* 调用`[self addDelegateForDataTask: uploadProgress: downloadProgress: completionHandler:];`方法将各个回调block加入管理.
+* 返回产生的uploadTask, 注意, 可能为nil.
+
 #### e. 创建一个上传任务.
+* 使用`url_session_manager_create_task_safely`安全方法与`[self.session uploadTaskWithRequest:request fromData:bodyData]`产生一个uploadTask.
+* 调用`[self addDelegateForDataTask: uploadProgress: downloadProgress: completionHandler:];`方法将各个回调block加入管理.
+* 返回产生的uploadTask, 注意, 可能为nil.
+
 #### f. 根据数据源上传(是这么翻译?)
+
 #### g. 创建下载请求
+
 #### h. 继续未完成的下载
 
 ### 3. 小结
 这个模块只是分析了一些主要的功能, 还有很多譬如获取上下传进度,要求认证,重定向之类的方法, 基本都是直接调用系统方法, 不过多说明.
+
+---
+
+## `AFURLSessionManagerTaskDelegate`
+`AFURLSessionManagerTaskDelegate` 是构造的的一个专门处理各种回调, 声明实现了`NSURLSessionTaskDelegate`, `NSURLSessionDataDelegate`, `NSURLSessionDownloadDelegate`三个delegate, 定义在`AFURLSessionManager.m`文件中, 即只有`AFURLSessionManager`可以使用这个delegate.
+
+### 1. 接口定义
+
+### 2. 分析
+
+
+### 3. 小结
+
 
 ___
 
