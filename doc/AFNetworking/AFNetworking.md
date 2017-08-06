@@ -371,7 +371,103 @@ ___
 
 ### 1. 接口定义
 
+#### a. 默认实例
+```
++ (instancetype)serializer;
+```
+
+#### b. 设置请求头参数
+```
+- (void)setValue:(nullable NSString *)value
+forHTTPHeaderField:(NSString *)field;
+```
+
+#### c. 获取请求头参数
+```
+- (nullable NSString *)valueForHTTPHeaderField:(NSString *)field;
+```
+
+#### d. 构造请求
+```
+- (NSMutableURLRequest *)requestWithMethod:(NSString *)method
+                                 URLString:(NSString *)URLString
+                                parameters:(nullable id)parameters
+                                     error:(NSError * _Nullable __autoreleasing *)error;
+```
+
+#### e. 构造含有body的请求
+```
+- (NSMutableURLRequest *)multipartFormRequestWithMethod:(NSString *)method
+                                              URLString:(NSString *)URLString
+                                             parameters:(nullable NSDictionary <NSString *, id> *)parameters
+                              constructingBodyWithBlock:(nullable void (^)(id <AFMultipartFormData> formData))block
+                                                  error:(NSError * _Nullable __autoreleasing *)error;
+```
+
+#### f. 解决`NSURLSessionTask`发送流文件时无法包含`Content-Length`的bug
+```
+- (NSMutableURLRequest *)requestWithMultipartFormRequest:(NSURLRequest *)request
+                             writingStreamContentsToFile:(NSURL *)fileURL
+                                       completionHandler:(nullable void (^)(NSError * _Nullable error))handler;
+```
+
 ### 2. 分析
+
+#### a. 默认实例
+* `stringEncoding`属性默认设置为`NSUTF8StringEncoding`.
+* 为`requestHeaderModificationQueue`创建一个并行队列, 对存储header的字典的操作都在这个队列中完成.
+* 设置`Accept-Language`, 取`[NSLocale preferredLanguages]`中前六个, 并从前往后以此设置优先级.
+* 设置`User-Agent`, 类似于`AppIdentifier/2.0.0 (iPhone; iOS 11.0; Scale/3.00)`, 包含设备的一些基本信息.
+* 对`allowsCellularAccess`, `cachePolicy`, `HTTPShouldHandleCookies`, `HTTPShouldUsePipelining`, `networkServiceType`, `timeoutInterval`等几个属性使用KVO.
+
+* **Tips: 用下面的方法定义了一个静态方法, 已达到定义一个静态数组的目的**
+
+	```
+	static NSArray * AFHTTPRequestSerializerObservedKeyPaths() {
+	    static NSArray *_AFHTTPRequestSerializerObservedKeyPaths = nil;
+	    static dispatch_once_t onceToken;
+	    dispatch_once(&onceToken, ^{
+	        _AFHTTPRequestSerializerObservedKeyPaths = @[NSStringFromSelector(@selector(allowsCellularAccess)), NSStringFromSelector(@selector(cachePolicy)), NSStringFromSelector(@selector(HTTPShouldHandleCookies)), NSStringFromSelector(@selector(HTTPShouldUsePipelining)), NSStringFromSelector(@selector(networkServiceType)), NSStringFromSelector(@selector(timeoutInterval))];
+	    });
+	
+	    return _AFHTTPRequestSerializerObservedKeyPaths;
+	}
+	```
+* 在KVO使用时, 为了避免在[XCTest中的崩溃](https://github.com/AFNetworking/AFNetworking/issues/2523), 在这几个属性主动改变时候, 应该关掉自动提醒[(参考KVO Compliance)](https://developer.apple.com/library/content/documentation/Cocoa/Conceptual/KeyValueObserving/Articles/KVOCompliance.html#//apple_ref/doc/uid/20002178-BAJEAIEE), 代码如下:
+
+	```
+	+ (BOOL)automaticallyNotifiesObserversForKey:(NSString *)key {
+	    if ([AFHTTPRequestSerializerObservedKeyPaths() containsObject:key]) {
+	        return NO;
+	    }
+	
+	    return [super automaticallyNotifiesObserversForKey:key];
+	}
+	```
+	
+
+#### b. 设置请求头参数
+* 在`self.requestHeaderModificationQueue`队列中使用 `dispatch_barrier_async`异步调用完成Set操作.
+
+#### c. 获取请求头参数
+* 在`self.requestHeaderModificationQueue`队列中使用 `dispatch_barrier_async`同步调用完成Get操作.
+
+#### d. 构造请求
+* 在`AFHTTPRequestSerializerObservedKeyPaths()`所说的若干个属性, 若是调用者有自己设置, 则会调用KVO, 在KVO的监控方法中, 若新值不为空, 则将改属性存到`self.mutableObservedChangedKeyPaths`中.
+* 在构造请求第一步, 遍历`self.mutableObservedChangedKeyPaths`, 将值存入`NSMutableURLRequest`实例`mutableRequest`中.
+* 调用`requestBySerializingRequest: withParameters: error:`方法, 对`mutableRequest`重新赋值, 注意的是, 该方法是`AFURLRequestSerialization`所定义的方法, 在`AFHTTPRequestSerializer`及子类`AFJSONRequestSerializer`和`AFPropertyListRequestSerializer`中都有实现. 接下来解析在`AFHTTPRequestSerializer `该方法的实现.
+* 将参数`request`复制了一份并赋值给临时变量`mutableRequest`. 并确保header一致.
+* 若有`parameter`参数, 将parameter转化为如"xxx=xxx&xxx=xxx"的字符串.(这一步可以通过设置`queryStringSerialization`完成自定义的参数序列化)
+* 如果当前请求是"GET", "HEAD", "DELETE"三者之一, 则将刚刚得到的字符串接到`mutableRequest `的`absoluteString`属性后面, 若`mutableRequest`的`query`有值, 应该接到`query`后面.
+* 如果当前请求不是"GET", "HEAD", "DELETE"三者之一, 将请求头`Content-Type`设置为`application/x-www-form-urlencoded`, 并将上一步所得到的字符串按照指定编码转化为NSData, 并设置为请求body.
+* 返回`mutableRequest`, 完成一次请求的构造.
+
+#### e. 构造含有body的请求
+
+
+#### f. 解决`NSURLSessionTask`发送流文件时无法包含`Content-Length`的bug
+
+
 
 ### 3. 小结
 
