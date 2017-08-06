@@ -8,8 +8,9 @@
 ## 结构导航(由表及里)
 #### 与外部HTTP请求交互的Manager -- [AFHTTPSessionManager]()
 #### 外部会话的核心(基类) -- [AFURLSessionManager]()
+#### 回调处理 -- [AFURLSessionManagerTaskDelegate]()
 #### 请求报文序列化 -- [AFHTTPRequestSerializer]()
-
+#### 网络监控模块 -- [AFNetworkReachabilityManager]()
 
 ---
 
@@ -268,25 +269,100 @@ AFHTTPResponseSerializer <AFURLResponseSerialization> * responseSerializer;
 * 返回产生的uploadTask, 注意, 可能为nil.
 
 #### f. 根据数据源上传(是这么翻译?)
+* 使用`[self.session uploadTaskWithStreamedRequest:request]`产生一个uploadTask, 除此之外, 跟上面一个方法一致.
 
 #### g. 创建下载请求
+* 使用`[self.session downloadTaskWithRequest:request]`创建一个下载任务.
+* 跟上面方法类似, 进行回调相关的管理.
+* 如果`destination`参数有赋值, 在该回调中返回期望的下载地址(是具体文件的地址, 不能是文件夹, 不在乎文件明德情况下可以使用 文件夹路径/uuid , 如果在乎文件名可以使用 文件夹路径/[NSURL lastPathComponent]), 下载完成后, 文件会被移到该地址.
 
 #### h. 继续未完成的下载
+* 使用`[self.session downloadTaskWithResumeData:resumeData]`初始化下载任务, 其他同上.
 
 ### 3. 小结
-这个模块只是分析了一些主要的功能, 还有很多譬如获取上下传进度,要求认证,重定向之类的方法, 基本都是直接调用系统方法, 不过多说明.
+这个模块只是分析了一些主要的功能, 还有很多譬如获取上下传进度,要求认证,重定向之类的方法, 基本都是直接调用系统方法, 不过多说明. 一些`NSURLSessionDownloadTask`, `NSURLSessionUploadTask`和 `NSURLSessionDataTask`的初始化都是直接调用的系统方法. 回调的绑定处理则是在[AFURLSessionManagerTaskDelegate]()完成.
 
 ---
 
-## `AFURLSessionManagerTaskDelegate`
-`AFURLSessionManagerTaskDelegate` 是构造的的一个专门处理各种回调, 声明实现了`NSURLSessionTaskDelegate`, `NSURLSessionDataDelegate`, `NSURLSessionDownloadDelegate`三个delegate, 定义在`AFURLSessionManager.m`文件中, 即只有`AFURLSessionManager`可以使用这个delegate.
+## 回调处理 -- `AFURLSessionManagerTaskDelegate`
+`AFURLSessionManagerTaskDelegate` 是构造的的一个专门处理各种回调, 声明实现了`NSURLSessionTaskDelegate`, `NSURLSessionDataDelegate`, `NSURLSessionDownloadDelegate`三个delegate, 具体是在`[self setDelegate:delegate forTask:downloadTask];`这个方法中完成的delegate绑定. 定义在`AFURLSessionManager.m`文件中, 即只有`AFURLSessionManager`可以使用这个delegate.
 
 ### 1. 接口定义
+#### a. 初始化
+```
+- (instancetype)initWithTask:(NSURLSessionTask *)task;
+```
+
+#### b.`NSURLSessionTaskDelegate` -- 完成任务
+```
+- (void)URLSession:(NSURLSession *)session task:(NSURLSessionTask *)task
+                           didCompleteWithError:(nullable NSError *)error;
+```
+
+#### c. `NSURLSessionDataDelegate` -- 下载了部分数据
+```
+- (void)URLSession:(NSURLSession *)session dataTask:(NSURLSessionDataTask *)dataTask
+                                     didReceiveData:(NSData *)data;
+```
+
+#### d. `NSURLSessionDataDelegate` -- 已经上传了部分数据
+```
+- (void)URLSession:(NSURLSession *)session task:(NSURLSessionTask *)task
+                                didSendBodyData:(int64_t)bytesSent
+                                 totalBytesSent:(int64_t)totalBytesSent
+                       totalBytesExpectedToSend:(int64_t)totalBytesExpectedToSend;
+```
+
+#### e. `NSURLSessionDownloadDelegate` -- 已经写入部分数据
+```
+- (void)URLSession:(NSURLSession *)session downloadTask:(NSURLSessionDownloadTask *)downloadTask
+                                           didWriteData:(int64_t)bytesWritten
+                                      totalBytesWritten:(int64_t)totalBytesWritten
+                              totalBytesExpectedToWrite:(int64_t)totalBytesExpectedToWrite
+```
+
+#### f. `NSURLSessionDownloadDelegate` -- 开始恢复下载
+```
+- (void)URLSession:(NSURLSession *)session downloadTask:(NSURLSessionDownloadTask *)downloadTask
+                                      didResumeAtOffset:(int64_t)fileOffset
+                                     expectedTotalBytes:(int64_t)expectedTotalBytes;
+```
+
+#### g. `NSURLSessionDownloadDelegate` -- 下载完成
+```
+- (void)URLSession:(NSURLSession *)session downloadTask:(NSURLSessionDownloadTask *)downloadTask
+                              didFinishDownloadingToURL:(NSURL *)location;
+```
 
 ### 2. 分析
+#### a. 初始化
+* 初始化`mutableData`, `uploadProgress`, `downloadProgress`.
+* 定义progress的`cancellationHandler`, `pausingHandler`, `resumingHandler`行为, 方便再将progress抛到外部后可以从外部控制task. **注意, `resumingHandler`是iOS9 之后才有的API**
+* 使用`KVO`监听progress的改变, 当改变时, 执行对应的`downloadProgressBlock`或者是`uploadProgressBlock`. 而progress的改变则是在`NSURLSessionDataDelegate `和`NSURLSessionDownloadDelegate`两组协议中触发.
+
+#### b. `NSURLSessionTaskDelegate` -- 完成任务
+* 将`self.mutableData`转化为NSData并释放.
+* 在专用的处理的一个并行队列(`url_session_manager_processing_queue()`)中完成结果的序列化
+* 在这儿的结果回调使用了`dispatch_group_async`, 但是源码并没有使用相关的`dispatch_group_notify`和`dispatch_group_wait`, 应该是希望调用者将manager的`completionGroup`自己设置, 并自行配合使用`dispatch_group_notify `和 `dispatch_group_wait `方法.
+
+#### c. `NSURLSessionDataDelegate` -- 下载了部分数据
+* 改变downloadProgress的下载进度, 使用`[self.mutableData appendData:data];`拼接数据.
+
+#### d. `NSURLSessionDataDelegate` -- 已经上传了部分数据
+* 改变uploadProgress的进度
+
+#### e. `NSURLSessionDownloadDelegate` -- 已经写入部分数据
+* 改变downloadProgress的下载进度, 数据拼接是系统自动完成.
+
+#### f. `NSURLSessionDownloadDelegate` -- 开始恢复下载
+* 改变downloadProgress的下载进度, `expectedTotalBytes`是总共要下载的数据量, 'fileOffset'开始下载时的偏移量是恢复下载时已经下载好的数据量.
+
+#### g. `NSURLSessionDownloadDelegate` -- 下载完成
+* 根据`downloadTaskDidFinishDownloading`回调去获取目标下载地址, 然后将下载好的文件从/tmp目录移到目标地址.
 
 
 ### 3. 小结
+`AFURLSessionManagerTaskDelegate`模块主要是暂时存储一次请求的各个回调, 以及持有dataTask并处理三种dataTask的回调, 并触发progress回调. 所有属性都是对外公开的, 因此在manager中对此模块的操作并没有在此模块中解释, 而是在manager中有所提及.
 
 
 ___
