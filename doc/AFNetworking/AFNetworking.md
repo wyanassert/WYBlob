@@ -10,7 +10,6 @@
 #### 外部会话的核心(基类) -- [AFURLSessionManager]()
 #### 回调处理 -- [AFURLSessionManagerTaskDelegate]()
 #### 请求报文序列化 -- [AFHTTPRequestSerializer]()
-#### 网络监控模块 -- [AFNetworkReachabilityManager]()
 
 ---
 
@@ -395,22 +394,6 @@ forHTTPHeaderField:(NSString *)field;
                                      error:(NSError * _Nullable __autoreleasing *)error;
 ```
 
-#### e. 构造含有body的请求
-```
-- (NSMutableURLRequest *)multipartFormRequestWithMethod:(NSString *)method
-                                              URLString:(NSString *)URLString
-                                             parameters:(nullable NSDictionary <NSString *, id> *)parameters
-                              constructingBodyWithBlock:(nullable void (^)(id <AFMultipartFormData> formData))block
-                                                  error:(NSError * _Nullable __autoreleasing *)error;
-```
-
-#### f. 解决`NSURLSessionTask`发送流文件时无法包含`Content-Length`的bug
-```
-- (NSMutableURLRequest *)requestWithMultipartFormRequest:(NSURLRequest *)request
-                             writingStreamContentsToFile:(NSURL *)fileURL
-                                       completionHandler:(nullable void (^)(NSError * _Nullable error))handler;
-```
-
 ### 2. 分析
 
 #### a. 默认实例
@@ -462,24 +445,5 @@ forHTTPHeaderField:(NSString *)field;
 * 如果当前请求不是"GET", "HEAD", "DELETE"三者之一, 将请求头`Content-Type`设置为`application/x-www-form-urlencoded`, 并将上一步所得到的字符串按照指定编码转化为NSData, 并设置为请求body.
 * 返回`mutableRequest`, 完成一次请求的构造.
 
-#### e. 构造含有body的请求
-
-
-#### f. 解决`NSURLSessionTask`发送流文件时无法包含`Content-Length`的bug
-
-
-
-### 3. 小结
-
----
-
-
-## 网络监控模块 -- `AFNetworkReachabilityManager`
-
-### 1. 接口定义
-
-### 2. 分析
-
-### 3. 小结
 
 ---
