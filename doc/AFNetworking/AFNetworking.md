@@ -6,10 +6,10 @@
 
 
 ## 结构导航(由表及里)
-#### 与外部HTTP请求交互的Manager -- [AFHTTPSessionManager]()
-#### 外部会话的核心(基类) -- [AFURLSessionManager]()
-#### 回调处理 -- [AFURLSessionManagerTaskDelegate]()
-#### 请求报文序列化 -- [AFHTTPRequestSerializer]()
+#### 与外部HTTP请求交互的Manager -- [AFHTTPSessionManager](https://github.com/wyanassert/WYBlob/blob/master/doc/AFNetworking/AFNetworking.md#与外部http请求交互的manager--afhttpsessionmanager)
+#### 外部会话的核心(基类) -- [AFURLSessionManager](https://github.com/wyanassert/WYBlob/blob/master/doc/AFNetworking/AFNetworking.md#外部会话的核心基类----afurlsessionmanager-1)
+#### 回调处理 -- [AFURLSessionManagerTaskDelegate](https://github.com/wyanassert/WYBlob/blob/master/doc/AFNetworking/AFNetworking.md#回调处理----afurlsessionmanagertaskdelegate-1)
+#### 请求报文序列化 -- [AFHTTPRequestSerializer](https://github.com/wyanassert/WYBlob/blob/master/doc/AFNetworking/AFNetworking.md#请求报文序列化----afhttprequestserializer-1)
 
 ---
 

@@ -1,5 +1,11 @@
 # WYBlob
 学习笔记, 主要会是一些源码的流程分析和 Tips 吧;
+## 10/05/2017 更新 - [AFNetworking源码分析](https://github.com/wyanassert/WYBlob/blob/master/doc/AFNetworking/AFNetworking.md)
+#### 1.与外部HTTP请求交互的Manager -- [AFHTTPSessionManager](https://github.com/wyanassert/WYBlob/blob/master/doc/AFNetworking/AFNetworking.md#与外部http请求交互的manager--afhttpsessionmanager)
+#### 2.外部会话的核心(基类) -- [AFURLSessionManager](https://github.com/wyanassert/WYBlob/blob/master/doc/AFNetworking/AFNetworking.md#外部会话的核心基类----afurlsessionmanager-1)
+#### 3.回调处理 -- [AFURLSessionManagerTaskDelegate](https://github.com/wyanassert/WYBlob/blob/master/doc/AFNetworking/AFNetworking.md#回调处理----afurlsessionmanagertaskdelegate-1)
+#### 4.请求报文序列化 -- [AFHTTPRequestSerializer](https://github.com/wyanassert/WYBlob/blob/master/doc/AFNetworking/AFNetworking.md#请求报文序列化----afhttprequestserializer-1)
+
 
 ___
 ## 07/16/2017 更新 - [SDWebImage源码分析](https://github.com/wyanassert/WYBlob/blob/master/doc/SDWebImage/Analyze.md)
