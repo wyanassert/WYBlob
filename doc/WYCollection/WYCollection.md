@@ -50,7 +50,7 @@
 ### [KTVHTTPCache](https://github.com/ChangbaDevs/KTVHTTPCache)
 
 > 唱吧 iOS 音视频缓存处理框架
-> 
+>
 
 
 ### [LLSimpleCamera](https://github.com/omergul/LLSimpleCamera)
@@ -61,11 +61,11 @@
 ### [GooeyTabbar](https://github.com/KittenYang/GooeyTabbar)
 
 > 皮筋式弹性缩放工具栏示例及演示.
-> 
+>
 
 ### [JDStatusBarNotification](https://github.com/calimarkus/JDStatusBarNotification)
 > 在状态栏顶部显示通知。可以自定义颜色字体以及动画。支持进度显示以及显示状态指示器.
-> 
+>
 
 ### [LSNavigationController](https://github.com/lsmakethebest/LSNavigationController)
 > 导航栏背景色可以统一设置，每一个控制器导航栏背景色还可以自己单独设置不影响统一设置的界面
@@ -89,3 +89,7 @@
 ### [YYKeyboardManager](https://github.com/ibireme/YYKeyboardManager)
 > iOS utility class allows you to access keyboard view and track keyboard animation.
 > iOS 键盘监听管理工具.
+
+### [Koloda](https://github.com/Yalantis/Koloda)
+> KolodaView is a class designed to simplify the implementation of Tinder like cards on iOS.
+> 仿Tinder动画
