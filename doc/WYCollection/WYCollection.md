@@ -93,3 +93,11 @@
 ### [Koloda](https://github.com/Yalantis/Koloda)
 > KolodaView is a class designed to simplify the implementation of Tinder like cards on iOS.
 > 仿Tinder动画
+
+
+### [GearRefreshControl](https://github.com/andreamazz/GearRefreshControl)
+> A custom animation for the UIRefreshControl
+
+
+### [RQShineLabel](https://github.com/zipme/RQShineLabel)
+> Secret app like text animation
