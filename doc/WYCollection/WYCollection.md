@@ -1,4 +1,34 @@
-收集一些可能用到的第三方库
+### 收集一些可能用到的第三方库
+
+### [VVSpringCollectionViewFlowLayout](https://github.com/onevcat/VVSpringCollectionViewFlowLayout)
+> A spring-like collection view layout. The same effect like iOS7's Message.app
+
+### [QQ-Goo](https://github.com/wzpziyi1/QQ-Goo)
+
+> QQ消息cell右边的红色小圆的粘性动画效果
+
+
+### [AirSandbox](https://github.com/music4kid/AirSandbox)
+> A simple class, enable you to view sandbox file system on iOS device, share files via airdrop, super convenient when you want to send log files from iOS device to Mac.
+
+### [PINCache](https://github.com/pinterest/PINCache)
+
+> Fast, non-deadlocking parallel object cache for iOS, tvOS and OS X
+
+### [CHTCollectionViewWaterfallLayout](https://github.com/chiahsien/CHTCollectionViewWaterfallLayout)
+
+> The waterfall (i.e., Pinterest-like) layout for UICollectionView.
+
+
+### [AISphereView](https://github.com/mayqiyue/AISphereView)
+> A wonderful 3D animation, The AISphereView was inspire by QQ Browser.
+
+### [MessageKit](https://github.com/MessageKit/MessageKit)
+> In-progress: A community-driven replacement for JSQMessagesViewController https://messagekit.github.io
+
+### [fishhook](https://github.com/facebook/fishhook)
+
+> A library that enables dynamically rebinding symbols in Mach-O binaries running on iOS.
 
 ### [AWRichText](https://github.com/hardman/AWRichText)
 
