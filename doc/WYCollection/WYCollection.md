@@ -1,5 +1,22 @@
 ### 收集一些可能用到的第三方库
 
+### [PNChart](https://github.com/kevinzhow/PNChart)
+> A simple and beautiful chart lib used in Piner and CoinsMan for iOS
+
+### [CHIPageControl](https://github.com/ChiliLabs/CHIPageControl)
+> A set of cool animated page controls written in Swift to replace boring UIPageControl.
+
+### [BEMCheckBOX](https://github.com/Boris-Em/BEMCheckBox)
+> Tasteful Checkbox for iOS. (Check box).
+
+### [SSBouncyButton](https://github.com/StyleShare/SSBouncyButton)
+
+> Button With Spring Effect.
+
+### [Sheriff](https://github.com/gemr/Sheriff)
+
+> Add Badge to UIView simplily. Support little customize.
+
 ### [VVSpringCollectionViewFlowLayout](https://github.com/onevcat/VVSpringCollectionViewFlowLayout)
 > A spring-like collection view layout. The same effect like iOS7's Message.app
 
