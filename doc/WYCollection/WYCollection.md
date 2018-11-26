@@ -1,5 +1,14 @@
 ### 收集一些可能用到的第三方库
 
+### [WYWebResource](https://github.com/wyanassert/WYWebResource)
+> 我自己写的通用资源包方案, 支持下载解压或者内置在 ipa 包中解压使用.
+
+### [SKAirSandbox](https://github.com/shaveKevin/SKAirSandbox)
+> [mrpeak大神](https://github.com/music4kid)写的沙盒调试工具[AirSandbox](https://github.com/music4kid/AirSandbox)的第三方封装, 支持 pod 引入
+
+### [MSWeakTimer](https://github.com/mindsnacks/MSWeakTimer)
+> `NSTimer`解耦并且处理线程问题, 高度推荐用于替代系统 NSTimer.
+
 ### [PNChart](https://github.com/kevinzhow/PNChart)
 > A simple and beautiful chart lib used in Piner and CoinsMan for iOS
 
