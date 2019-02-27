@@ -1,5 +1,8 @@
 ### 收集一些可能用到的第三方库
 
+### [AnimationEngine](https://github.com/intuit/AnimationEngine)
+> Easily build advanced custom animations on iOS. Alternative to UIView
+
 ### [WYWebResource](https://github.com/wyanassert/WYWebResource)
 > 我自己写的通用资源包方案, 支持下载解压或者内置在 ipa 包中解压使用.
 
