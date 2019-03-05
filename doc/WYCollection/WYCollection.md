@@ -1,5 +1,8 @@
 ### 收集一些可能用到的第三方库
 
+### [UITextView+Placeholder](https://github.com/devxoul/UITextView-Placeholder)
+> `UITextView`添加 placeholder
+
 ### [AnimationEngine](https://github.com/intuit/AnimationEngine)
 > Easily build advanced custom animations on iOS. Alternative to UIView
 
