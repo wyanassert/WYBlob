@@ -1,13 +1,16 @@
 ### 收集一些可能用到的第三方库
 
+### [UIView+Shake](https://github.com/andreamazz/UIView-Shake)
+> UIView category that adds shake animation
+
+### [TYCyclePagerView](https://github.com/12207480/TYCyclePagerView)
+> a simple and usefull cycle pager view ,and auto scroll banner view(轮播图) ,include pageControl for iOS,support Objective-C and swift
+
 ### [UITextView+Placeholder](https://github.com/devxoul/UITextView-Placeholder)
 > `UITextView`添加 placeholder
 
 ### [AnimationEngine](https://github.com/intuit/AnimationEngine)
 > Easily build advanced custom animations on iOS. Alternative to UIView
-
-### [WYWebResource](https://github.com/wyanassert/WYWebResource)
-> 我自己写的通用资源包方案, 支持下载解压或者内置在 ipa 包中解压使用.
 
 ### [SKAirSandbox](https://github.com/shaveKevin/SKAirSandbox)
 > [mrpeak大神](https://github.com/music4kid)写的沙盒调试工具[AirSandbox](https://github.com/music4kid/AirSandbox)的第三方封装, 支持 pod 引入
@@ -167,3 +170,15 @@
 
 ### [GGChart](https://github.com/MarcWeigert/GGCharts)
 > 可以高度自定义的图表框架。柱状图、折线图、雷达图、饼图、K线图、分时图。
+
+---
+### 自己封装的代码
+### [WYWebResource](https://github.com/wyanassert/WYWebResource)
+> 我自己写的通用资源包方案, 支持下载解压或者内置在 ipa 包中解压使用.
+
+### [WYImagePickerUntils](https://github.com/wyanassert/WYImagePickerUntils)
+> 对`PhotoKit`简单的封装
+
+
+### [WYUtils](https://github.com/wyanassert/WYUtils)
+> 主要是一些简单实用的分类和自定义基础类
